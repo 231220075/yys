@@ -1,0 +1,70 @@
+# 1. metadata.name: HPA 的名称
+# 2. metadata.namespace: 目标命名空间
+# 3. spec.scaleTargetRef.name: 目标 Deployment 的名称
+# 4. minReplicas/maxReplicas: 根据业务需求调整副本数范围
+# 5. metrics 阈值: 根据应用特性调整 CPU/内存阈值
+# 6. behavior 策略: 根据业务场景调整扩缩容策略
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-hpa-demo          # TODO: 修改为实际的 HPA 名称
+  namespace: default            # TODO: 修改为实际的命名空间
+  labels:
+    app: nginx-hpa-demo         # TODO: 修改为实际的应用标签
+    version: v1
+  annotations:
+    description: "HPA with optimized scaling policies"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx-hpa-demo        # TODO: 修改为实际的 Deployment 名称
+  minReplicas: 2                # TODO: 根据业务需求调整最小副本数
+  maxReplicas: 10               # TODO: 根据业务需求调整最大副本数
+  metrics:
+  # CPU 指标 
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60  # TODO: 根据应用特性调整 CPU 阈值
+  # 内存指标 
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70  # TODO: 根据应用特性调整内存阈值
+  # 扩缩容行为策略
+  behavior:
+    scaleDown:
+      # 缩容稳定期：5分钟
+      stabilizationWindowSeconds: 300
+      policies:
+      # 基于百分比的缩容策略
+      - type: Percent
+        value: 10               # TODO: 调整缩容百分比
+        periodSeconds: 60
+      # 基于 Pod 数量的缩容策略
+      - type: Pods
+        value: 1                # TODO: 调整每次最大缩容 Pod 数
+        periodSeconds: 60
+      # 选择最保守的缩容策略
+      selectPolicy: Min
+    scaleUp:
+      # 扩容稳定期：1分钟
+      stabilizationWindowSeconds: 60
+      policies:
+      # 基于百分比的扩容策略
+      - type: Percent
+        value: 50               # TODO: 调整扩容百分比
+        periodSeconds: 15
+      # 基于 Pod 数量的扩容策略
+      - type: Pods
+        value: 2                # TODO: 调整每次最大扩容 Pod 数
+        periodSeconds: 15
+      # 选择最激进的扩容策略
+      selectPolicy: Max
+
