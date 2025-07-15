@@ -18,6 +18,13 @@
 
 **解决方案**: 在post actions的sh命令外包装`node('master')`
 
+#### 问题3: Docker镜像拉取超时
+**错误信息**: `Get "https://registry-1.docker.io/v2/": context deadline exceeded`
+
+**原因**: Jenkins环境无法访问Docker Hub，网络连接超时
+
+**解决方案**: 使用阿里云镜像源和重试机制
+
 ## ⚙️ Jenkins Job 配置
 
 ### 1. 创建Pipeline Job
@@ -128,9 +135,35 @@ docker build --no-cache -t test-image .
 
 # 查看构建日志
 docker build -t test-image . --progress=plain
+
+# 测试网络连接
+curl -s --max-time 10 https://registry-1.docker.io/v2/
+curl -s --max-time 10 https://registry.cn-hangzhou.aliyuncs.com/v2/
+
+# 使用阿里云镜像源
+docker build -f Dockerfile.stable -t test-image .
 ```
 
-#### 4. Harbor推送失败
+#### 4. 网络连接问题
+```bash
+# 配置Docker镜像加速器
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<-'EOF'
+{
+  "registry-mirrors": [
+    "https://registry.cn-hangzhou.aliyuncs.com",
+    "https://docker.mirrors.ustc.edu.cn"
+  ]
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+
+# 测试镜像拉取
+docker pull registry.cn-hangzhou.aliyuncs.com/library/maven:3.9.4-openjdk-17
+```
+
+#### 5. Harbor推送失败
 ```bash
 # 测试Harbor连接
 docker login 172.22.83.19:30003
@@ -140,7 +173,7 @@ ping 172.22.83.19
 telnet 172.22.83.19 30003
 ```
 
-#### 5. Kubernetes部署失败
+#### 6. Kubernetes部署失败
 ```bash
 # 检查kubectl配置
 kubectl cluster-info

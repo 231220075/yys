@@ -1,5 +1,5 @@
-# 多阶段构建
-FROM maven:3.9.4-openjdk-17 AS builder
+# 多阶段构建 - 使用阿里云镜像源解决网络问题
+FROM registry.cn-hangzhou.aliyuncs.com/library/maven:3.9.4-openjdk-17 AS builder
 
 WORKDIR /app
 COPY pom.xml .
@@ -8,8 +8,8 @@ COPY src ./src
 # 构建应用
 RUN mvn clean package -DskipTests
 
-# 运行时镜像
-FROM openjdk:17-jre-slim
+# 运行时镜像 - 使用阿里云镜像源
+FROM registry.cn-hangzhou.aliyuncs.com/library/openjdk:17-jre-slim
 
 WORKDIR /app
 

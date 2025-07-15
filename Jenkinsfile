@@ -84,11 +84,32 @@ pipeline {
                 echo "3.Image Build Stage (包含 Maven 构建)"
                 script {
                     try {
-                        // 使用 Dockerfile 多阶段构建，包含 Maven 构建和镜像构建
-                        sh "docker build --cache-from ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER} -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest ."
-                        echo "Docker image built successfully: ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER}"
+                        // 检查网络连接并选择合适的Dockerfile
+                        def dockerFile = "Dockerfile"
+                        def registryTest = sh(script: "timeout 10 curl -s https://registry-1.docker.io/v2/ || echo 'FAILED'", returnStdout: true).trim()
+                        
+                        if (registryTest == 'FAILED') {
+                            echo "⚠️ Docker Hub不可达，使用稳定版Dockerfile"
+                            dockerFile = "Dockerfile.stable"
+                        }
+                        
+                        // 构建Docker镜像，增加超时和重试
+                        echo "使用 ${dockerFile} 构建镜像..."
+                        retry(2) {
+                            sh """
+                                docker build \
+                                    --file ${dockerFile} \
+                                    --cache-from ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest \
+                                    --build-arg BUILDKIT_INLINE_CACHE=1 \
+                                    --network=host \
+                                    -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER} \
+                                    -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest \
+                                    .
+                            """
+                        }
+                        echo "✅ Docker镜像构建成功: ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER}"
                     } catch (Exception e) {
-                        error "Docker build failed: ${e.getMessage()}"
+                        error "Docker构建失败: ${e.getMessage()}"
                     }
                 }
             }
