@@ -1,19 +1,14 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: yys-app-monitor
+  name: yunyuansheng3-servicemonitor
   labels:
-    app: yys-app
-    prometheus: kube-prometheus
+    release: prometheus-operator # 根据你的 Prometheus Operator 安装情况修改
 spec:
   selector:
     matchLabels:
-      app: yys-app
+      app: yunyuansheng3
   endpoints:
-  - port: http
+  - port: http # Service 中定义的端口名称
     path: /actuator/prometheus
-    interval: 30s
-    scrapeTimeout: 10s
-  namespaceSelector:
-    matchNames:
-    - default
+    interval: 15s # 采集间隔

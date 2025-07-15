@@ -3,35 +3,13 @@ server:
 
 spring:
   application:
-    name: yys-app
+    name: nju08
 
-# Actuator配置
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics
   endpoint:
     health:
       show-details: always
-    metrics:
-      enabled: true
-    prometheus:
-      enabled: true
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    web:
-      server:
-        request:
-          autotime:
-            enabled: true
-
-# 日志配置
-logging:
-  level:
-    com.example.yys: DEBUG
-    org.springframework.web: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

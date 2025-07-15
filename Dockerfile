@@ -1,36 +1,30 @@
-# 多阶段构建 - 使用阿里云镜像源解决网络问题
-FROM registry.cn-hangzhou.aliyuncs.com/library/maven:3.9.4-openjdk-17 AS builder
+# 使用 Maven 镜像作为构建阶段
+FROM maven:3.8.5-openjdk-17 AS builder
 
+# 设置工作目录
 WORKDIR /app
+
+# 复制 pom.xml 文件并下载依赖
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# 复制项目源代码
 COPY src ./src
 
-# 构建应用
+# 打包 Spring Boot 应用
 RUN mvn clean package -DskipTests
 
-# 运行时镜像 - 使用阿里云镜像源
-FROM registry.cn-hangzhou.aliyuncs.com/library/openjdk:17-jre-slim
+# 使用 OpenJDK 镜像作为运行阶段
+FROM openjdk:17-jre-slim
 
+# 设置工作目录
 WORKDIR /app
 
-# 添加非root用户
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# 从构建阶段复制打包好的 jar 文件
+COPY --from=builder /app/target/*.jar app.jar
 
-# 复制jar文件
-COPY --from=builder /app/target/yys-app-1.0.0.jar app.jar
-
-# 修改文件所有者
-RUN chown appuser:appuser app.jar
-
-# 切换到非root用户
-USER appuser
-
-# 暴露端口
+# 暴露应用端口
 EXPOSE 8080
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
-
-# 启动应用
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# 运行 Spring Boot 应用
+ENTRYPOINT ["java","-jar","app.jar"]
