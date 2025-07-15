@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: yys-app-service
+  namespace: nju08
+  labels:
+    app: yys-app
+    team: nju08
+spec:
+  selector:
+    app: yys-app
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yys-app-nodeport
+  namespace: nju08
+  labels:
+    app: yys-app
+    team: nju08
+    service-type: external
+spec:
+  selector:
+    app: yys-app
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    nodePort: 30008  # nju08 专用端口
+    protocol: TCP
+  type: NodePort

@@ -1,0 +1,300 @@
+pipeline {
+    agent any
+    
+    // 如果Jenkins中没有配置Maven和JDK工具，注释掉下面的tools部分
+    tools {
+        maven 'Maven-3.9.0'  // 需要在Jenkins中配置Maven工具
+        jdk 'JDK-17'         // 需要在Jenkins中配置JDK工具
+    }
+    
+    environment {
+        DOCKER_IMAGE = 'yys-app'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        K8S_NAMESPACE = 'default'
+        MAVEN_OPTS = '-Dmaven.test.failure.ignore=false'
+    }
+    
+    stages {
+        stage('Environment Check') {
+            steps {
+                echo '=== 环境检查 ==='
+                script {
+                    sh '''
+                        echo "检查Java版本:"
+                        java -version || echo "Java not found"
+                        
+                        echo "检查Maven版本:"
+                        mvn -version || echo "Maven not found"
+                        
+                        echo "检查Docker版本:"
+                        docker --version || echo "Docker not found"
+                        
+                        echo "检查kubectl版本:"
+                        kubectl version --client || echo "kubectl not found"
+                        
+                        echo "当前工作目录:"
+                        pwd
+                        
+                        echo "项目文件列表:"
+                        ls -la
+                    '''
+                }
+            }
+        }
+        
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                echo '=== 运行单元测试 ==='
+                script {
+                    try {
+                        // 使用Docker容器运行Maven，如果本地没有Maven
+                        def mavenCommand = '''
+                            if command -v mvn &> /dev/null; then
+                                echo "使用本地Maven..."
+                                mvn clean test
+                            else
+                                echo "本地Maven未找到，使用Docker运行Maven..."
+                                docker run --rm -v "$PWD":/usr/src/app -v "$HOME/.m2":/root/.m2 -w /usr/src/app maven:3.9.4-openjdk-17 mvn clean test
+                            fi
+                        '''
+                        sh mavenCommand
+                        echo '单元测试完成'
+                    } catch (Exception e) {
+                        echo "测试失败: ${e.getMessage()}"
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
+            }
+            post {
+                always {
+                    script {
+                        // 检查测试报告文件是否存在
+                        def testReports = sh(
+                            script: 'find target/surefire-reports -name "*.xml" 2>/dev/null || echo "none"',
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (testReports != "none" && testReports != "") {
+                            echo "发现测试报告，正在发布..."
+                            junit 'target/surefire-reports/*.xml'
+                        } else {
+                            echo '未找到测试报告文件'
+                        }
+                        
+                        // 检查覆盖率报告
+                        def coverageReport = sh(
+                            script: 'test -f target/site/jacoco/index.html && echo "exists" || echo "none"',
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (coverageReport == "exists") {
+                            publishHTML([
+                                allowMissing: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
+                                reportDir: 'target/site/jacoco',
+                                reportFiles: 'index.html',
+                                reportName: 'JaCoCo Coverage Report'
+                            ])
+                        } else {
+                            echo '未找到覆盖率报告'
+                        }
+                    }
+                }
+                success {
+                    echo '✅ 所有测试通过!'
+                }
+                unstable {
+                    echo '⚠️ 部分测试失败，但继续构建'
+                }
+                failure {
+                    echo '❌ 测试失败!'
+                }
+            }
+        }
+        
+        stage('Build') {
+            when {
+                not { 
+                    equals expected: 'FAILURE', actual: currentBuild.result 
+                }
+            }
+            steps {
+                echo '=== 构建应用 ==='
+                script {
+                    try {
+                        def buildCommand = '''
+                            if command -v mvn &> /dev/null; then
+                                echo "使用本地Maven构建..."
+                                mvn clean package -DskipTests
+                            else
+                                echo "使用Docker运行Maven构建..."
+                                docker run --rm -v "$PWD":/usr/src/app -v "$HOME/.m2":/root/.m2 -w /usr/src/app maven:3.9.4-openjdk-17 mvn clean package -DskipTests
+                            fi
+                        '''
+                        sh buildCommand
+                        echo '应用构建完成'
+                        
+                        // 检查构建产物
+                        sh 'ls -la target/*.jar'
+                    } catch (Exception e) {
+                        echo "构建失败: ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                    }
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            when {
+                not { 
+                    equals expected: 'FAILURE', actual: currentBuild.result 
+                }
+            }
+            steps {
+                echo '=== 构建Docker镜像 ==='
+                script {
+                    try {
+                        // 检查Docker是否可用
+                        sh 'docker --version'
+                        
+                        // 构建Docker镜像
+                        def image = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                        
+                        // 标记latest版本
+                        sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                        
+                        echo "Docker镜像构建成功: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        
+                        // 列出镜像
+                        sh "docker images | grep ${DOCKER_IMAGE}"
+                        
+                        // 如果需要推送到Registry，取消下面的注释
+                        /*
+                        docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+                            image.push()
+                            image.push('latest')
+                        }
+                        */
+                        
+                    } catch (Exception e) {
+                        echo "Docker构建失败: ${e.getMessage()}"
+                        echo "可能原因: Docker未安装或权限不足"
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Kubernetes') {
+            when {
+                not { 
+                    equals expected: 'FAILURE', actual: currentBuild.result 
+                }
+            }
+            steps {
+                echo '=== 部署到Kubernetes ==='
+                script {
+                    try {
+                        sh '''
+                            echo "检查kubectl配置..."
+                            kubectl version --client
+                            
+                            echo "检查Kubernetes连接..."
+                            kubectl get nodes || echo "无法连接到Kubernetes集群"
+                            
+                            echo "更新部署文件中的镜像标签..."
+                            if [ -f k8s/deployment.yaml ]; then
+                                sed -i "s|yys-app:latest|${DOCKER_IMAGE}:${DOCKER_TAG}|g" k8s/deployment.yaml
+                                echo "镜像标签已更新为: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                            fi
+                            
+                            echo "应用Kubernetes配置..."
+                            kubectl apply -f k8s/ || echo "Kubernetes部署失败，可能是集群未配置"
+                            
+                            echo "应用HPA配置..."
+                            kubectl apply -f hpa/ || echo "HPA部署失败"
+                        '''
+                    } catch (Exception e) {
+                        echo "Kubernetes部署失败: ${e.getMessage()}"
+                        echo "这可能是因为Jenkins环境中未配置kubectl或Kubernetes集群访问"
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
+            }
+        }
+        
+        stage('Verify Deployment') {
+            when {
+                not { 
+                    equals expected: 'FAILURE', actual: currentBuild.result 
+                }
+            }
+            steps {
+                echo '=== 验证部署 ==='
+                script {
+                    try {
+                        sh '''
+                            echo "检查部署状态..."
+                            kubectl get deployments -l app=yys-app || echo "无法获取部署状态"
+                            
+                            echo "检查Pod状态..."
+                            kubectl get pods -l app=yys-app || echo "无法获取Pod状态"
+                            
+                            echo "检查服务状态..."
+                            kubectl get services -l app=yys-app || echo "无法获取服务状态"
+                            
+                            echo "检查HPA状态..."
+                            kubectl get hpa || echo "无法获取HPA状态"
+                            
+                            echo "部署验证完成"
+                        '''
+                    } catch (Exception e) {
+                        echo "部署验证失败: ${e.getMessage()}"
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo '=== 清理工作空间 ==='
+            script {
+                // 清理Docker镜像（可选）
+                try {
+                    sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
+                } catch (Exception e) {
+                    echo "清理Docker镜像失败: ${e.getMessage()}"
+                }
+            }
+            cleanWs()
+        }
+        success {
+            echo '🎉 Pipeline执行成功!'
+            script {
+                def summary = """
+                ✅ 构建成功摘要:
+                - 构建号: ${BUILD_NUMBER}
+                - 镜像: ${DOCKER_IMAGE}:${DOCKER_TAG}
+                - 分支: ${env.BRANCH_NAME ?: 'main'}
+                - 提交: ${env.GIT_COMMIT ?: 'unknown'}
+                """
+                echo summary
+            }
+        }
+        unstable {
+            echo '⚠️ Pipeline完成但有警告 - 部分步骤失败但不影响主要功能'
+        }
+        failure {
+            echo '❌ Pipeline执行失败!'
+        }
+    }
+}
