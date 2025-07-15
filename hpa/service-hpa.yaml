@@ -8,20 +8,20 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: nginx-hpa-demo          # TODO: 修改为实际的 HPA 名称
-  namespace: default            # TODO: 修改为实际的命名空间
+  name: yys-app-hpa
+  namespace: default
   labels:
-    app: nginx-hpa-demo         # TODO: 修改为实际的应用标签
+    app: yys-app
     version: v1
   annotations:
-    description: "HPA with optimized scaling policies"
+    description: "HPA for YYS Spring Boot application with rate limiting"
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: nginx-hpa-demo        # TODO: 修改为实际的 Deployment 名称
-  minReplicas: 2                # TODO: 根据业务需求调整最小副本数
-  maxReplicas: 10               # TODO: 根据业务需求调整最大副本数
+    name: yys-app
+  minReplicas: 2
+  maxReplicas: 10
   metrics:
   # CPU 指标 
   - type: Resource
