@@ -84,18 +84,43 @@ pipeline {
                 echo "3.Image Build Stage (包含 Maven 构建)"
                 script {
                     try {
-                        // 检查网络连接并选择合适的Dockerfile
+                        // 测试多个镜像源的可用性并选择最佳Dockerfile
                         def dockerFile = "Dockerfile"
-                        def registryTest = sh(script: "timeout 10 curl -s https://registry-1.docker.io/v2/ || echo 'FAILED'", returnStdout: true).trim()
+                        def buildStrategy = "官方镜像"
                         
-                        if (registryTest == 'FAILED') {
-                            echo "⚠️ Docker Hub不可达，使用稳定版Dockerfile"
+                        // 测试Docker Hub连接
+                        def dockerHubTest = sh(script: "timeout 10 curl -s https://registry-1.docker.io/v2/ || echo 'FAILED'", returnStdout: true).trim()
+                        
+                        // 测试腾讯云镜像源连接
+                        def tencentTest = sh(script: "timeout 10 curl -s https://ccr.ccs.tencentyun.com/v2/ || echo 'FAILED'", returnStdout: true).trim()
+                        
+                        // 测试网易镜像源连接
+                        def neteaseTest = sh(script: "timeout 10 curl -s https://hub-mirror.c.163.com/v2/ || echo 'FAILED'", returnStdout: true).trim()
+                        
+                        // 智能选择构建策略
+                        if (dockerHubTest != 'FAILED') {
+                            dockerFile = "Dockerfile.local"
+                            buildStrategy = "官方镜像+国内Maven源"
+                            echo "✅ Docker Hub可达，使用官方镜像"
+                        } else if (tencentTest != 'FAILED') {
                             dockerFile = "Dockerfile.stable"
+                            buildStrategy = "腾讯云镜像源"
+                            echo "✅ 腾讯云镜像源可达，使用腾讯云镜像"
+                        } else if (neteaseTest != 'FAILED') {
+                            dockerFile = "Dockerfile.mirror"
+                            buildStrategy = "网易镜像源"
+                            echo "✅ 网易镜像源可达，使用网易镜像"
+                        } else {
+                            dockerFile = "Dockerfile"
+                            buildStrategy = "标准镜像"
+                            echo "⚠️ 所有镜像源测试失败，使用标准Dockerfile"
                         }
                         
+                        echo "📋 构建策略: ${buildStrategy}"
+                        echo "📄 使用Dockerfile: ${dockerFile}"
+                        
                         // 构建Docker镜像，增加超时和重试
-                        echo "使用 ${dockerFile} 构建镜像..."
-                        retry(2) {
+                        retry(3) {
                             sh """
                                 docker build \
                                     --file ${dockerFile} \
@@ -108,6 +133,7 @@ pipeline {
                             """
                         }
                         echo "✅ Docker镜像构建成功: ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER}"
+                        echo "🎯 构建策略: ${buildStrategy}"
                     } catch (Exception e) {
                         error "Docker构建失败: ${e.getMessage()}"
                     }

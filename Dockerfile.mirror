@@ -1,0 +1,67 @@
+# 多阶段构建 - 通用稳定版本
+# 使用Docker Hub官方镜像，但通过网易镜像源加速
+FROM hub-mirror.c.163.com/library/maven:3.9.4-openjdk-17 AS builder
+
+WORKDIR /app
+
+# 配置Maven使用阿里云仓库镜像，加速依赖下载
+RUN mkdir -p /root/.m2 && \
+    cat > /root/.m2/settings.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+          http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>aliyunmaven</id>
+      <mirrorOf>*</mirrorOf>
+      <name>阿里云公共仓库</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+    </mirror>
+  </mirrors>
+</settings>
+EOF
+
+# 复制pom.xml并下载依赖（利用Docker缓存层）
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# 复制源代码
+COPY src ./src
+
+# 构建应用
+RUN mvn clean package -DskipTests -B
+
+# 运行时镜像 - 使用网易镜像源
+FROM hub-mirror.c.163.com/library/openjdk:17-jre-slim
+
+# 安装curl用于健康检查
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 添加非root用户
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# 复制jar文件
+COPY --from=builder /app/target/yys-app-1.0.0.jar app.jar
+
+# 修改文件所有者
+RUN chown appuser:appuser app.jar
+
+# 切换到非root用户
+USER appuser
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# JVM参数优化
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseContainerSupport"
+
+# 启动应用
+ENTRYPOINT java $JAVA_OPTS -jar /app/app.jar

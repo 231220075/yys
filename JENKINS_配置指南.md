@@ -23,7 +23,14 @@
 
 **原因**: Jenkins环境无法访问Docker Hub，网络连接超时
 
-**解决方案**: 使用阿里云镜像源和重试机制
+**解决方案**: 使用多镜像源智能选择策略
+
+#### 问题4: 镜像仓库访问被拒绝
+**错误信息**: `pull access denied for registry.cn-hangzhou.aliyuncs.com/library/maven`
+
+**原因**: 镜像仓库路径错误或需要认证
+
+**解决方案**: 使用公开可访问的镜像源（腾讯云、网易等）
 
 ## ⚙️ Jenkins Job 配置
 
@@ -146,13 +153,19 @@ docker build -f Dockerfile.stable -t test-image .
 
 #### 4. 网络连接问题
 ```bash
+# 测试各种镜像源连接
+curl -s --max-time 10 https://registry-1.docker.io/v2/           # Docker Hub
+curl -s --max-time 10 https://ccr.ccs.tencentyun.com/v2/        # 腾讯云
+curl -s --max-time 10 https://hub-mirror.c.163.com/v2/          # 网易
+
 # 配置Docker镜像加速器
 sudo mkdir -p /etc/docker
 sudo tee /etc/docker/daemon.json <<-'EOF'
 {
   "registry-mirrors": [
-    "https://registry.cn-hangzhou.aliyuncs.com",
-    "https://docker.mirrors.ustc.edu.cn"
+    "https://ccr.ccs.tencentyun.com",
+    "https://hub-mirror.c.163.com",
+    "https://registry.cn-hangzhou.aliyuncs.com"
   ]
 }
 EOF
@@ -160,7 +173,8 @@ sudo systemctl daemon-reload
 sudo systemctl restart docker
 
 # 测试镜像拉取
-docker pull registry.cn-hangzhou.aliyuncs.com/library/maven:3.9.4-openjdk-17
+docker pull ccr.ccs.tencentyun.com/library/maven:3.9.4-openjdk-17
+docker pull hub-mirror.c.163.com/library/maven:3.9.4-openjdk-17
 ```
 
 #### 5. Harbor推送失败

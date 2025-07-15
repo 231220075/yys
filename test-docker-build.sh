@@ -20,28 +20,48 @@ echo "Docker版本: $(docker --version)"
 
 # 测试网络连接
 echo ""
-echo "🌐 测试网络连接..."
+echo "🌐 测试镜像源连接..."
 
 # 测试Docker Hub连接
 DOCKER_HUB_STATUS="失败"
 if timeout 10 curl -s https://registry-1.docker.io/v2/ > /dev/null 2>&1; then
     DOCKER_HUB_STATUS="正常"
 fi
-echo "Docker Hub连接: $DOCKER_HUB_STATUS"
+echo "Docker Hub: $DOCKER_HUB_STATUS"
 
-# 测试阿里云镜像源连接
-ALIYUN_STATUS="失败"
-if timeout 10 curl -s https://registry.cn-hangzhou.aliyuncs.com/v2/ > /dev/null 2>&1; then
-    ALIYUN_STATUS="正常"
+# 测试腾讯云镜像源连接
+TENCENT_STATUS="失败"
+if timeout 10 curl -s https://ccr.ccs.tencentyun.com/v2/ > /dev/null 2>&1; then
+    TENCENT_STATUS="正常"
 fi
-echo "阿里云镜像源连接: $ALIYUN_STATUS"
+echo "腾讯云镜像源: $TENCENT_STATUS"
 
-# 选择使用的Dockerfile
+# 测试网易镜像源连接
+NETEASE_STATUS="失败"
+if timeout 10 curl -s https://hub-mirror.c.163.com/v2/ > /dev/null 2>&1; then
+    NETEASE_STATUS="正常"
+fi
+echo "网易镜像源: $NETEASE_STATUS"
+
+# 智能选择使用的Dockerfile
 DOCKERFILE="Dockerfile"
-if [ "$DOCKER_HUB_STATUS" = "失败" ] && [ "$ALIYUN_STATUS" = "正常" ]; then
+BUILD_STRATEGY="标准构建"
+
+if [ "$DOCKER_HUB_STATUS" = "正常" ]; then
+    DOCKERFILE="Dockerfile.local"
+    BUILD_STRATEGY="官方镜像+国内Maven源"
+elif [ "$TENCENT_STATUS" = "正常" ]; then
     DOCKERFILE="Dockerfile.stable"
-    echo "⚠️  将使用稳定版Dockerfile (阿里云镜像源)"
+    BUILD_STRATEGY="腾讯云镜像源"
+elif [ "$NETEASE_STATUS" = "正常" ]; then
+    DOCKERFILE="Dockerfile.mirror"
+    BUILD_STRATEGY="网易镜像源"
+else
+    echo "⚠️  所有镜像源都不可达，将使用标准Dockerfile"
 fi
+
+echo "📋 选择构建策略: $BUILD_STRATEGY"
+echo "📄 使用Dockerfile: $DOCKERFILE"
 
 echo ""
 echo "🔨 开始Docker构建测试..."
@@ -106,7 +126,8 @@ fi
 echo ""
 echo "📋 测试总结:"
 echo "- Docker环境: ✅"
-echo "- 网络连接: Docker Hub $DOCKER_HUB_STATUS, 阿里云 $ALIYUN_STATUS"
+echo "- 网络连接: Docker Hub $DOCKER_HUB_STATUS, 腾讯云 $TENCENT_STATUS, 网易 $NETEASE_STATUS"
+echo "- 构建策略: $BUILD_STRATEGY"
 echo "- 镜像构建: ✅"
 echo "- 应用启动: ✅"
 echo ""
