@@ -1,5 +1,153 @@
 pipeline {
-    agent none
+    agent any
+    
+    // 环境变量管理
+    environment {
+        HARBOR_REGISTRY = '172.22.83.19:30003'
+        IMAGE_NAME = 'nju08/prometheus-test-demo'
+        NAMESPACE = 'nju08'
+        MONITOR_NAMESPACE = 'nju08'
+        HARBOR_USER = 'nju08'
+    }
+    
+    parameters {
+        string(name: 'HARBOR_PASS', defaultValue: '', description: 'Harbor login password')
+    }
+    
+    stages {
+        stage('Clone Code') {
+            steps {
+                echo "1.Git Clone Code"
+                script {
+                    try {
+                        checkout scm
+                    } catch (Exception e) {
+                        error "Git clone failed: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
+        
+        stage('Image Build') {
+            steps {
+                echo "2.Image Build Stage (包含 Maven 构建)"
+                script {
+                    try {
+                        // 使用 Dockerfile 多阶段构建，包含 Maven 构建和镜像构建
+                        sh """
+                            docker build \\
+                                --no-cache \\
+                                --pull \\
+                                -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER} \\
+                                -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest \\
+                                .
+                        """
+                    } catch (Exception e) {
+                        error "Docker build failed: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
+
+        stage('Push') {
+            steps {
+                echo "3.Push Docker Image Stage"
+                script {
+                    try {
+                        // 登录 Harbor
+                        sh """
+                            echo '${params.HARBOR_PASS}' | docker login \\
+                                --username=${env.HARBOR_USER} \\
+                                --password-stdin \\
+                                ${env.HARBOR_REGISTRY}
+                        """
+                        
+                        // 推送镜像
+                        sh "docker push ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER}"
+                        sh "docker push ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest"
+                        
+                        echo "✅ Image pushed successfully!"
+                    } catch (Exception e) {
+                        error "Docker push failed: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Kubernetes') {
+            steps {
+                echo "4. Deploy to Kubernetes"
+                script {
+                    try {
+                        // 创建命名空间（如果不存在）
+                        sh """
+                            kubectl create namespace ${env.NAMESPACE} \\
+                                --dry-run=client -o yaml | kubectl apply -f -
+                        """
+                        
+                        // 更新部署文件中的镜像
+                        sh """
+                            # 备份原文件
+                            cp k8s/deployment.yaml k8s/deployment.yaml.bak
+                            
+                            # 替换镜像地址
+                            sed -i 's|your-docker-registry/nju08:latest|${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER}|g' k8s/deployment.yaml
+                        """
+                        
+                        // 部署到 Kubernetes
+                        sh """
+                            kubectl apply -f k8s/deployment.yaml -n ${env.NAMESPACE}
+                            kubectl apply -f k8s/service.yaml -n ${env.NAMESPACE}
+                            kubectl apply -f k8s/servicemonitor.yaml -n ${env.MONITOR_NAMESPACE}
+                        """
+                        
+                        // 等待部署完成
+                        sh """
+                            kubectl rollout status deployment/nju08-deployment \\
+                                -n ${env.NAMESPACE} --timeout=300s
+                        """
+                        
+                        // 显示部署状态
+                        sh """
+                            kubectl get pods -l app=nju08 -n ${env.NAMESPACE}
+                            kubectl get svc -l app=nju08 -n ${env.NAMESPACE}
+                        """
+                        
+                        echo "✅ Kubernetes deployment successful!"
+                        
+                    } catch (Exception e) {
+                        error "Kubernetes deployment failed: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                echo "🔄 Pipeline execution completed."
+                try {
+                    // 清理本地镜像
+                    sh """
+                        docker rmi ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER} || true
+                        docker rmi ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest || true
+                        docker system prune -f || true
+                    """
+                    echo "✅ Image cleanup completed"
+                } catch (Exception e) {
+                    echo "⚠️ Image cleanup failed: ${e.getMessage()}"
+                }
+            }
+        }
+        success {
+            echo "🎉 Pipeline succeeded! NJU08 application deployed successfully."
+        }
+        failure {
+            echo "❌ Pipeline failed! Please check the logs for details."
+        }
+    }
+}   agent none
     
     // 环境变量管理
     environment {
