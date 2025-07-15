@@ -5,7 +5,6 @@ pipeline {
     environment {
         HARBOR_REGISTRY = '172.22.83.19:30003'
         IMAGE_NAME = 'nju08/yys-app'
-        GIT_REPO = 'https://gitee.com/nju231220075_1/yys.git'
         NAMESPACE = 'nju08'
         MONITOR_NAMESPACE = 'nju08'
         HARBOR_USER = 'nju08'
@@ -25,9 +24,11 @@ pipeline {
                 echo "1.Git Clone Code"
                 script {
                     try {
-                        git url: "${env.GIT_REPO}"
+                        // 使用 checkout scm 来检出当前分支的代码
+                        checkout scm
+                        echo "Successfully checked out code from current branch"
                     } catch (Exception e) {
-                        error "Git clone failed: ${e.getMessage()}"
+                        error "Git checkout failed: ${e.getMessage()}"
                     }
                 }
             }
@@ -243,13 +244,15 @@ pipeline {
         always {
             echo '🔄 Pipeline execution completed.'
             // 清理本地镜像以节省磁盘空间
-            script {
-                try {
-                    sh "docker rmi ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER} || true"
-                    sh "docker rmi ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest || true"
-                    sh "docker system prune -f || true"
-                } catch (Exception e) {
-                    echo "Image cleanup failed: ${e.getMessage()}"
+            node('master') {
+                script {
+                    try {
+                        sh "docker rmi ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER} || true"
+                        sh "docker rmi ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest || true"
+                        sh "docker system prune -f || true"
+                    } catch (Exception e) {
+                        echo "Image cleanup failed: ${e.getMessage()}"
+                    }
                 }
             }
         }
