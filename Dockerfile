@@ -4,29 +4,15 @@ FROM maven:3.8.5-openjdk-17 AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 配置 Maven 阿里云镜像源（加速下载）
-RUN mkdir -p /root/.m2 && \
-    echo '<?xml version="1.0" encoding="UTF-8"?>' > /root/.m2/settings.xml && \
-    echo '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">' >> /root/.m2/settings.xml && \
-    echo '  <mirrors>' >> /root/.m2/settings.xml && \
-    echo '    <mirror>' >> /root/.m2/settings.xml && \
-    echo '      <id>aliyunmaven</id>' >> /root/.m2/settings.xml && \
-    echo '      <mirrorOf>*</mirrorOf>' >> /root/.m2/settings.xml && \
-    echo '      <name>阿里云公共仓库</name>' >> /root/.m2/settings.xml && \
-    echo '      <url>https://maven.aliyun.com/repository/public</url>' >> /root/.m2/settings.xml && \
-    echo '    </mirror>' >> /root/.m2/settings.xml && \
-    echo '  </mirrors>' >> /root/.m2/settings.xml && \
-    echo '</settings>' >> /root/.m2/settings.xml
-
 # 复制 pom.xml 文件并下载依赖
 COPY pom.xml .
-RUN mvn dependency:go-offline -B --no-transfer-progress
+RUN mvn dependency:go-offline -B
 
 # 复制项目源代码
 COPY src ./src
 
 # 打包 Spring Boot 应用
-RUN mvn clean package -DskipTests --no-transfer-progress
+RUN mvn clean package -DskipTests
 
 # 使用 OpenJDK 镜像作为运行阶段
 FROM openjdk:17-jre-slim

@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nju08-deployment
+  name: yunyuansheng3-deployment
 spec:
   replicas: 2 # 初始副本数
   selector:
     matchLabels:
-      app: nju08
+      app: yunyuansheng3
   template:
     metadata:
       labels:
-        app: nju08
+        app: yunyuansheng3
     spec:
       containers:
-      - name: nju08
-        image: your-docker-registry/nju08:latest # 替换为你的镜像仓库地址
+      - name: yunyuansheng3
+        image: your-docker-registry/yunyuansheng3:latest # 替换为你的镜像仓库地址
         imagePullPolicy: IfNotPresent # 镜像拉取策略
         ports:
         - containerPort: 8080

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nju08-service
+  name: yunyuansheng3-service
 spec:
   selector:
-    app: nju08
+    app: yunyuansheng3
   ports:
   - protocol: TCP
     port: 80

@@ -1,0 +1,35 @@
+pipeline {
+    agent any
+
+    environment {
+        KUBECONFIG_DATA = credentials('your-kubeconfig-credential-id') // 替换为存储 kubeconfig 的 Jenkins 凭据 ID
+        IMAGE_NAME = "yunyuansheng3"
+        IMAGE_TAG = "\${env.BUILD_NUMBER}" // 使用与 CI 相同的 BUILD_NUMBER
+        DOCKER_REGISTRY = 'your-docker-registry' // 替换为你的镜像仓库地址
+    }
+
+    stages {
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // 将 kubeconfig 数据写入文件
+                    sh 'echo "\${KUBECONFIG_DATA}" > kubeconfig'
+                    // 设置 KUBECONFIG 环境变量
+                    sh 'export KUBECONFIG=\$(pwd)/kubeconfig'
+                    // 应用 Kubernetes YAML 文件
+                    sh "kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml -f k8s/servicemonitor.yaml"
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    // 等待 Deployment 滚动更新完成
+                    sh "kubectl rollout status deployment/yunyuansheng3-deployment --timeout=5m"
+                    // 可以添加更多验证步骤，例如检查 Pod 状态或访问 Service
+                }
+            }
+        }
+    }
+}
