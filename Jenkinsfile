@@ -5,7 +5,7 @@ pipeline {
     environment {
         HARBOR_REGISTRY = '172.22.83.19:30003'
         IMAGE_NAME = 'nju08/prometheus-test-demo'
-        GIT_REPO = 'https://gitee.com/nju231220075_1/yys.git'
+        GIT_REPO = 'https://gitee.com/grissom_sh/prometheus-test-demo.git'
         NAMESPACE = 'nju08'
         MONITOR_NAMESPACE = 'nju08'
         HARBOR_USER = 'nju08'
