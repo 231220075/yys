@@ -1,0 +1,209 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::       (v2.1.13.RELEASE)
+
+2025-07-17 10:36:12.298  INFO 45911 --- [           main] i.d.p.PrometheusTestDemoApplication      : Starting PrometheusTestDemoApplication v0.0.1-SNAPSHOT on hrz.local with PID 45911 (/Users/macbook/Desktop/云原生/yys/target/prometheus-test-demo-0.0.1-SNAPSHOT.jar started by macbook in /Users/macbook/Desktop/云原生/yys)
+2025-07-17 10:36:12.300  INFO 45911 --- [           main] i.d.p.PrometheusTestDemoApplication      : No active profile set, falling back to default profiles: default
+2025-07-17 10:36:13.759  INFO 45911 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+2025-07-17 10:36:13.787  INFO 45911 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-07-17 10:36:13.787  INFO 45911 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.31]
+2025-07-17 10:36:13.879  INFO 45911 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-07-17 10:36:13.879  INFO 45911 --- [           main] o.s.web.context.ContextLoader            : Root WebApplicationContext: initialization completed in 1529 ms
+2025-07-17 10:36:14.249  INFO 45911 --- [           main] o.s.s.concurrent.ThreadPoolTaskExecutor  : Initializing ExecutorService 'applicationTaskExecutor'
+2025-07-17 10:36:14.783  INFO 45911 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+2025-07-17 10:36:14.897  INFO 45911 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8998 (http)
+2025-07-17 10:36:14.898  INFO 45911 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-07-17 10:36:14.898  INFO 45911 --- [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.31]
+2025-07-17 10:36:14.902  INFO 45911 --- [           main] o.a.c.c.C.[Tomcat-1].[localhost].[/]     : Initializing Spring embedded WebApplicationContext
+2025-07-17 10:36:14.902  INFO 45911 --- [           main] o.s.web.context.ContextLoader            : Root WebApplicationContext: initialization completed in 114 ms
+2025-07-17 10:36:14.922  INFO 45911 --- [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-07-17 10:36:14.973  INFO 45911 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8998 (http) with context path ''
+2025-07-17 10:36:14.976  INFO 45911 --- [           main] i.d.p.PrometheusTestDemoApplication      : Started PrometheusTestDemoApplication in 3.323 seconds (JVM running for 3.796)
+2025-07-17 10:36:27.577  INFO 45911 --- [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-07-17 10:36:27.577  INFO 45911 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-07-17 10:36:27.581  INFO 45911 --- [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms
+Processing /hello request
+Processing /hello request
+2025-07-17 10:36:56.280  INFO 45911 --- [nio-8998-exec-1] o.a.c.c.C.[Tomcat-1].[localhost].[/]     : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-07-17 10:36:56.280  INFO 45911 --- [nio-8998-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-07-17 10:36:56.281  INFO 45911 --- [nio-8998-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request
+Processing /hello request

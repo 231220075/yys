@@ -67,6 +67,22 @@ pipeline {
             }
         }
         
+        stage('Unit Tests') {
+            agent {
+                label 'master'
+            }
+            steps {
+                echo "3.Unit Tests Stage"
+                script {
+                    try {
+                        sh "mvn test"
+                    } catch (Exception e) {
+                        error "Unit tests failed: ${e.getMessage()}"
+                    }
+                }
+            }
+        }
+        
         stage('Deploy to Kubernetes') {
             agent {
                 label 'slave'
