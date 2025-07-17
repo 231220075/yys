@@ -1,5 +1,5 @@
 # 第一阶段：构建阶段
-FROM maven:3.8.7-eclipse-temurin-17 AS builder
+FROM maven:3.8.7-eclipse-temurin-11 AS builder
 
 # 设置工作目录
 WORKDIR /usr/src/mymaven
@@ -16,7 +16,7 @@ COPY src ./src
 RUN mvn -B  clean package
 
 # 第二阶段：运行阶段
-FROM eclipse-temurin:17-jre-centos7
+FROM eclipse-temurin:11-jre-centos7
 
 # 设置时区
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
