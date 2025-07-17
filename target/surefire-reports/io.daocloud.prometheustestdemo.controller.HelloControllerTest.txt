@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: io.daocloud.prometheustestdemo.controller.HelloControllerTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.119 s - in io.daocloud.prometheustestdemo.controller.HelloControllerTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.793 s - in io.daocloud.prometheustestdemo.controller.HelloControllerTest

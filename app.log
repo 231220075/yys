@@ -207,3 +207,4 @@ Processing /hello request
 Processing /hello request
 Processing /hello request
 Processing /hello request
+2025-07-17 12:59:01.932  INFO 45911 --- [       Thread-3] o.s.s.concurrent.ThreadPoolTaskExecutor  : Shutting down ExecutorService 'applicationTaskExecutor'

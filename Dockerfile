@@ -1,5 +1,5 @@
-# 第一阶段：构建阶段
-FROM maven:3.8.7-eclipse-temurin-11 AS builder
+# 第一阶段：构建阶段 - 统一使用Java 11
+FROM maven:3.9.6-eclipse-temurin-11 AS builder
 
 # 设置工作目录
 WORKDIR /usr/src/mymaven
@@ -31,10 +31,11 @@ WORKDIR /app
 # 从构建阶段复制构建结果
 COPY --from=builder /usr/src/mymaven/target/prometheus-test-demo-0.0.1-SNAPSHOT.jar ./prometheus-test-demo-0.0.1-SNAPSHOT.jar
 
-# 启动命令
+# 启动命令 - 使用Java 11兼容的JVM参数
 ENTRYPOINT ["sh", "-c", "set -e && java -XX:+PrintFlagsFinal \
                                            -XX:+HeapDumpOnOutOfMemoryError \
                                            -XX:HeapDumpPath=/heapdump/heapdump.hprof \
-                                           -XX:+UnlockExperimentalVMOptions \
-                                           -XX:+UseCGroupMemoryLimitForHeap \
+                                           -XX:+UseContainerSupport \
+                                           -XX:MaxRAMPercentage=75.0 \
+                                           -Djava.security.egd=file:/dev/./urandom \
                                            $JAVA_OPTS -jar prometheus-test-demo-0.0.1-SNAPSHOT.jar"]
