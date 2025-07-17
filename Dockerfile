@@ -13,7 +13,7 @@ COPY pom.xml .
 COPY src ./src
 
 # 构建项目
-RUN mvn -B -DskipTests clean package
+RUN mvn -B  clean package
 
 # 第二阶段：运行阶段
 FROM eclipse-temurin:17-jre-centos7
