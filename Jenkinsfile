@@ -38,12 +38,17 @@ pipeline {
             }
             steps {
                 echo "2.Image Build Stage (包含 Maven 构建)"
-                script {
-                    try {
-                        // 使用 Dockerfile 多阶段构建，包含 Maven 构建和镜像构建
-                        sh "docker build --cache-from ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER} -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest ."
-                    } catch (Exception e) {
-                        error "Docker build failed: ${e.getMessage()}"
+                timeout(time: 30, unit: 'MINUTES') {
+                    script {
+                        retry(3) {
+                            try {
+                                // 使用 Dockerfile 多阶段构建，包含 Maven 构建和镜像构建
+                                sh "docker build --cache-from ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:${BUILD_NUMBER} -t ${env.HARBOR_REGISTRY}/${env.IMAGE_NAME}:latest ."
+                            } catch (Exception e) {
+                                echo "Docker build attempt failed: ${e.getMessage()}"
+                                throw e
+                            }
+                        }
                     }
                 }
             }
