@@ -73,14 +73,18 @@ pipeline {
         }
         
         stage('Unit Tests') {
-            agent {
-                label 'master'
-            }
             steps {
                 echo "3.Unit Tests Stage"
                 script {
                     try {
-                        sh "mvn test"
+                        // 使用 Maven Docker 镜像运行测试
+                        sh '''
+                            docker run --rm \
+                                -v ${WORKSPACE}:/app \
+                                -w /app \
+                                registry.cn-hangzhou.aliyuncs.com/library/maven:3.9.6-eclipse-temurin-17 \
+                                mvn test -Dmaven.repo.local=/app/.m2/repository
+                        '''
                     } catch (Exception e) {
                         error "Unit tests failed: ${e.getMessage()}"
                     }
