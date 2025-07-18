@@ -13,4 +13,14 @@ public class HelloController {
     public Map<String, String> hello() {
         return Collections.singletonMap("msg", "hello");
     }
+    
+    @GetMapping("/")
+    public Map<String, String> home() {
+        return Collections.singletonMap("status", "Prometheus Test Demo is running!");
+    }
+    
+    @GetMapping("/health")
+    public Map<String, String> health() {
+        return Collections.singletonMap("status", "UP");
+    }
 }
