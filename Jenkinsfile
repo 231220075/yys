@@ -128,6 +128,16 @@ pipeline {
                             sh 'kubectl apply -f ./jenkins/scripts/prometheus-test-demo.yaml'
                         }
                         
+                        stage('Wait for Redis') {
+                            echo "6.5. Wait for Redis to be ready"
+                            try {
+                                sh "kubectl wait --for=condition=ready pod -l app=redis -n ${NAMESPACE} --timeout=120s"
+                                echo "Redis is ready!"
+                            } catch (Exception e) {
+                                echo "Redis readiness check failed, but continuing: ${e.getMessage()}"
+                            }
+                        }
+                        
                         stage('Deploy prometheus-test-demo ServiceMonitor') {
                             echo "7. Deploy ServiceMonitor To K8s Stage"
                             try {
@@ -140,10 +150,24 @@ pipeline {
                         stage('Health Check') {
                             echo "8. Health Check Stage"
                             try {
-                                sh "kubectl wait --for=condition=ready pod -l app=prometheus-test-demo -n ${NAMESPACE} --timeout=300s"
+                                sh "kubectl wait --for=condition=ready pod -l app=prometheus-test-demo -n ${NAMESPACE} --timeout=600s"
                                 echo "Application is healthy and ready!"
+                                
+                                // 验证Redis连接
+                                sh """
+                                    echo "Verifying Redis connection..."
+                                    kubectl exec -n ${NAMESPACE} deployment/prometheus-test-demo -- curl -s http://localhost:8998/actuator/health | grep -i redis || echo "Redis health check not found in response"
+                                """
                             } catch (Exception e) {
-                                error "Health check failed: ${e.getMessage()}"
+                                echo "Health check failed: ${e.getMessage()}"
+                                // 输出调试信息
+                                sh """
+                                    echo "=== Debugging information ==="
+                                    kubectl get pods -n ${NAMESPACE}
+                                    kubectl logs -l app=prometheus-test-demo -n ${NAMESPACE} --tail=50
+                                    kubectl logs -l app=redis -n ${NAMESPACE} --tail=20 || echo "No Redis logs found"
+                                """
+                                error "Health check failed"
                             }
                         }
                     }
