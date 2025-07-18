@@ -22,14 +22,10 @@ import java.util.Map;
 @RestController
 @Slf4j
 public class HelloController {
-
-    // 限流器：每秒允许 100 个请求
     private final RateLimiter rateLimiter = RateLimiter.create(100.0);
     
     @Autowired
     private MeterRegistry meterRegistry;
-    
-    // 自定义计数器
     private Counter requestCounter;
     private Counter rateLimitedCounter;
 
@@ -47,15 +43,9 @@ public class HelloController {
                 .register(meterRegistry);
     }
 
-    /**
-     * 11.1 实现 REST 接口 (5 分)
-     * 实现一个简单的 REST API 接口 (如 '/hello')，返回固定 JSON 数据
-     */
     @GetMapping("/hello")
     @Timed(value = "http_request_duration_seconds", description = "HTTP request duration")
     public ResponseEntity<Map<String, Object>> hello() {
-        // 11.2 实现限流控制 (10 分)
-        // 要求接口支持限流功能：当请求频率超过每秒 100 次时，返回 HTTP 状态码 '429 Too Many Requests'
         if (!rateLimiter.tryAcquire()) {
             // 记录被限流的请求
             rateLimitedCounter.increment();
