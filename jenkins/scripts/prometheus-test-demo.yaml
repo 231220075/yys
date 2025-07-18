@@ -58,7 +58,13 @@ spec:
   selector:
     app: prometheus-test-demo
   ports:
-    - name: tcp
+    - name: app-port
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 32080
+    - name: management-port
       protocol: TCP
       port: 8998
       targetPort: 8998
+      nodePort: 32228
