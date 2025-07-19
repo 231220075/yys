@@ -20,6 +20,17 @@ spec:
       labels:
         app: prometheus-test-demo
     spec:
+      initContainers:
+      - name: wait-for-redis
+        image: busybox:1.36
+        command: ['sh', '-c']
+        args:
+        - |
+          until nc -z redis-service.{NAMESPACE}.svc.cluster.local 6379; do
+            echo "Waiting for Redis to be ready..."
+            sleep 2
+          done
+          echo "Redis is ready!"
       containers:
         - image: 172.22.83.19:30003/nju08/prometheus-test-demo:{VERSION}
           name: prometheus-test-demo
@@ -27,7 +38,7 @@ spec:
           - containerPort: 8998
           env:
           - name: REDIS_HOST
-            value: "redis-service"
+            value: "redis-service.{NAMESPACE}.svc.cluster.local"
           - name: REDIS_PORT
             value: "6379"
           resources:
@@ -41,7 +52,7 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8998
-            initialDelaySeconds: 90
+            initialDelaySeconds: 120
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 3
@@ -49,7 +60,7 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8998
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 5
